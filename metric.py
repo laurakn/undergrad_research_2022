@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def Demographic_parity_prob(group_labels, prediction_labels):
+def Demographic_parity_prob(group_labels, prediction_labels, classification_labels):
     """
         Input:
             group_labels-np array
@@ -11,7 +11,7 @@ def Demographic_parity_prob(group_labels, prediction_labels):
     """
     return np.sum(prediction_labels[group_labels == 0] == 1) / np.sum(group_labels == 0), np.sum(prediction_labels[group_labels == 1] == 1) / np.sum(group_labels == 1)
 
-def Demographic_parity_worst_group(group_labels, prediction_labels):
+def Demographic_parity_worst_group(group_labels, prediction_labels, classification_labels):
     """
         Input:
             group_labels-np array
@@ -99,7 +99,6 @@ def Equal_odds_prob(group_labels, prediction_labels, classification_labels):
 
     group0_NegClass = group0_classification == -1
     # P(Y_hat = 1 | A = 0, Y = -1)
-    print(np.sum(group0_NegClass))
     P3 = np.sum(group0_prediction[group0_NegClass] == 1) / np.sum(group0_NegClass)
 
     group1_NegClass = group1_classification == -1
@@ -136,7 +135,6 @@ def Equal_odds_worst_group(group_labels, prediction_labels, classification_label
 
     group0_NegClass = group0_classification == -1
     # P(Y_hat = 1 | A = 0, Y = -1)
-    print(np.sum(group0_NegClass))
     P3 = np.sum(group0_prediction[group0_NegClass] == 1) / np.sum(group0_NegClass)
 
     group1_NegClass = group1_classification == -1
