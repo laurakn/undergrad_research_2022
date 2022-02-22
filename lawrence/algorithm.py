@@ -67,6 +67,12 @@ class Adaptive_clf_Abernethy():
         group0_negative_train, group0_negative_val = train_test_split(group0_negative, test_size=(num_validation//4))
         group1_positive_train, group1_positive_val = train_test_split(group1_positive, test_size=(num_validation//4))
         group1_negative_train, group1_negative_val = train_test_split(group1_negative, test_size=(num_validation//4))
+
+        ''' laura note
+        # df contians feautres and group/label
+        df.groupby(['label', 'group']).head(size you want)
+        '''
+
        
         self.X_val = np.vstack([group0_positive_val, group0_negative_val, group1_positive_val, group1_negative_val])
         self.y_val = np.hstack([np.ones(num_validation//4), (-1)* np.ones(num_validation//4), np.ones(num_validation//4), (-1)*np.ones(num_validation//4)])
@@ -86,6 +92,13 @@ class Adaptive_clf_Abernethy():
         self.X_pool = list(self.X_pool)
         self.y_pool = list(self.y_pool)
         self.group_pool = list(self.group_pool)
+
+        ''' Laura note
+        group1_index df[df.group ==1].index()
+        group2_index
+
+        store n_group1, use index up to this number of samples to subset df
+        '''
     def train(self, fairness, loss, p=0.5, T = 500):
         """
         train logistic regression according to the fairness metric.
@@ -126,6 +139,7 @@ class Adaptive_clf_Abernethy():
             else: 
                 disadv_group = 1
             # choose where to sample 
+            # np.random.binomial(1, p)
             if np.random.random_sample() < p:
                 index = np.random.randint(0, len(self.y_pool))
                 self.X_train.append(self.X_pool[index])
@@ -136,6 +150,11 @@ class Adaptive_clf_Abernethy():
                 self.y_pool.pop(index)
                 self.group_pool.pop(index)
             else:
+                '''
+                df_pool can subset it to the disadvantaged group
+                 within arrays, can np.where(group_array, 0) = sample_array
+                 np.random.choice(sample_array)
+                '''
                 index = np.random.randint(0, len(self.y_pool))
                 while self.group_pool[index] != disadv_group:
                     index = np.random.randint(0, len(self.y_pool))
