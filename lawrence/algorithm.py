@@ -22,11 +22,15 @@ class Adaptive_clf_Abernethy():
         self.y_pool = None
         self.group_pool = None
         
+        self.X_test = None
+        self.y_test = None
+        self.group_test = None
+        
         self.fairness_violation = []
         self.train_loss = []
         pass
     
-    def make_set(self, feature, label, group ,train_size, val_size):
+    def make_set(self, feature, label, group ,train_size, val_size, feature_test, label_test, group_test):
         """
         Give feature set and corresponding label set to generate train set, sample pool, validation set, and test set.
 
@@ -67,12 +71,6 @@ class Adaptive_clf_Abernethy():
         group0_negative_train, group0_negative_val = train_test_split(group0_negative, test_size=(num_validation//4))
         group1_positive_train, group1_positive_val = train_test_split(group1_positive, test_size=(num_validation//4))
         group1_negative_train, group1_negative_val = train_test_split(group1_negative, test_size=(num_validation//4))
-
-        ''' laura note
-        # df contians feautres and group/label
-        df.groupby(['label', 'group']).head(size you want)
-        '''
-
        
         self.X_val = np.vstack([group0_positive_val, group0_negative_val, group1_positive_val, group1_negative_val])
         self.y_val = np.hstack([np.ones(num_validation//4), (-1)* np.ones(num_validation//4), np.ones(num_validation//4), (-1)*np.ones(num_validation//4)])
@@ -92,13 +90,10 @@ class Adaptive_clf_Abernethy():
         self.X_pool = list(self.X_pool)
         self.y_pool = list(self.y_pool)
         self.group_pool = list(self.group_pool)
-
-        ''' Laura note
-        group1_index df[df.group ==1].index()
-        group2_index
-
-        store n_group1, use index up to this number of samples to subset df
-        '''
+        
+        self.X_test = list(feature_test)
+        self.y_test = list(label_test)
+        self.group_test = list(group_test)
     def train(self, fairness, loss, p=0.5, T = 500):
         """
         train logistic regression according to the fairness metric.
@@ -115,31 +110,35 @@ class Adaptive_clf_Abernethy():
         
         for i in range(1, T + 1):
             
-            y_pred = self.clf.predict(self.X_val)
-            train_error = loss(self.y_val, y_pred)
+            y_pred = self.clf.predict(self.X_test)
+            train_error = loss(self.y_test, y_pred)
             # self.train_loss.append(train_error)
             # print(self.group_val)
             # print(self.y_val)
             # print(y_pred)
             self.train_loss.append(train_error)
-            fairness_violation = fairness(np.array(self.group_val), np.array(y_pred), np.array(self.y_val))
+            
+            
             
             # record fairness violation
             if i % 500 == 0:
                 # self.fairness_violation.append(np.abs(fairness_violation))
-                demographic_parity = np.abs(Demographic_parity_worst_group(np.array(self.group_val), np.array(y_pred), np.array(self.y_val)))
-                equal_odds = np.abs(Equal_odds_worst_group(np.array(self.group_val), np.array(y_pred), np.array(self.y_val)))
-                equal_oppo = np.abs(Equal_opportunity_worst_group(np.array(self.group_val), np.array(y_pred), np.array(self.y_val)))
-                overall_acc = np.abs(Overall_Accuracy_worst_group(np.array(self.group_val), np.array(y_pred), np.array(self.y_val)))
+                demographic_parity = np.abs(Demographic_parity_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
+                equal_odds = np.abs(Equal_odds_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
+                equal_oppo = np.abs(Equal_opportunity_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
+                overall_acc = np.abs(Overall_Accuracy_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
                 # print(f"training error: {train_error}, demographic parity violation: {np.abs(demographic_parity)}, equal odds violation: {equal_odds}, equal opportunity violation: {equal_oppo}, overall accuracy violation: {overall_acc}")
                 self.fairness_violation.append([p, i, train_error, demographic_parity, equal_odds, equal_oppo, overall_acc])
+            
+            y_pred = self.clf.predict(self.X_val)
+            fairness_violation = fairness(np.array(self.group_val), np.array(y_pred), np.array(self.y_val))
+            
             # determine the disadvantaged group
             if (fairness_violation < 0):
                 disadv_group = 0
             else: 
                 disadv_group = 1
             # choose where to sample 
-            # np.random.binomial(1, p)
             if np.random.random_sample() < p:
                 index = np.random.randint(0, len(self.y_pool))
                 self.X_train.append(self.X_pool[index])
@@ -150,11 +149,6 @@ class Adaptive_clf_Abernethy():
                 self.y_pool.pop(index)
                 self.group_pool.pop(index)
             else:
-                '''
-                df_pool can subset it to the disadvantaged group
-                 within arrays, can np.where(group_array, 0) = sample_array
-                 np.random.choice(sample_array)
-                '''
                 index = np.random.randint(0, len(self.y_pool))
                 while self.group_pool[index] != disadv_group:
                     index = np.random.randint(0, len(self.y_pool))
@@ -199,6 +193,10 @@ class Adaptive_clf_Shekhar():
 
         self.Dz = [[], []]
         self.Dz_label = [[], []]
+        
+        self.X_test = None
+        self.y_test = None
+        self.group_test = None
 
         self.pi = [0, 0]
         self.N = [0, 0]
@@ -206,8 +204,7 @@ class Adaptive_clf_Shekhar():
 
         self.train_loss = []
         self.fairness_violation = []
-    
-    def make_set(self, feature, label, group):
+    def make_set(self, feature, label, group, feature_test, label_test, group_test):
         """
         Give feature set and corresponding label set to generate train set, sample pool, validation set, and test set.
 
@@ -309,7 +306,10 @@ class Adaptive_clf_Shekhar():
         self.pi[1] = 0.5
 
 
-
+        self.X_test = list(feature_test)
+        self.y_test = list(label_test)
+        self.group_test = list(group_test)
+        
     def train(self, n, loss, C=1):
         """
         train logistic regression according to the fairness metric.
@@ -350,15 +350,15 @@ class Adaptive_clf_Shekhar():
 
             self.clf.fit(self.Dt, self.Dt_label)
                 
-            y_pred = self.clf.predict(self.Dt)
-            train_error = loss(y_pred, self.Dt_label)
+            y_pred = self.clf.predict(self.X_test)
+            train_error = loss(y_pred, self.y_test)
             self.train_loss.append(train_error)
 
             if t % 500 == 0:
-                demographic_parity = np.abs(Demographic_parity_worst_group(np.array(self.Dt_group), np.array(y_pred), np.array(self.Dt_label)))
-                equal_odds = np.abs(Equal_odds_worst_group(np.array(self.Dt_group), np.array(y_pred), np.array(self.Dt_label)))
-                equal_oppo = np.abs(Equal_opportunity_worst_group(np.array(self.Dt_group), np.array(y_pred), np.array(self.Dt_label)))
-                overall_acc = np.abs(Overall_Accuracy_worst_group(np.array(self.Dt_group), np.array(y_pred), np.array(self.Dt_label)))
+                demographic_parity = np.abs(Demographic_parity_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
+                equal_odds = np.abs(Equal_odds_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
+                equal_oppo = np.abs(Equal_opportunity_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
+                overall_acc = np.abs(Overall_Accuracy_worst_group(np.array(self.group_test), np.array(y_pred), np.array(self.y_test)))
                 # print(f"training error: {train_error}, demographic parity violation: {np.abs(demographic_parity)}, equal odds violation: {equal_odds}, equal opportunity violation: {equal_oppo}, overall accuracy violation: {overall_acc}")
                 self.fairness_violation.append([C, t, train_error, demographic_parity, equal_odds, equal_oppo, overall_acc])
         return self.fairness_violation, self.train_loss
