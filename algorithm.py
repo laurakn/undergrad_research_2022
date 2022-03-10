@@ -369,7 +369,7 @@ class Adaptive_clf_Shekhar():
         y_pred = f.predict(self.Dz[z])
         loss = loss_func(self.Dz_label[z], y_pred)
             
-        return 1/len(self.Dz_label[z])*loss + self.ez[z] + (2*C/self.pi[z]) * (self.pi[0]*self.ez[0] + self.pi[1]*self.ez[1])
+        return loss + self.ez[z] + (2*C/self.pi[z]) * (self.pi[0]*self.ez[0] + self.pi[1]*self.ez[1])
     
     
     def update_ez(self, z, dvc=3, delta=0.05):
