@@ -310,7 +310,7 @@ class Adaptive_clf_Shekhar():
         self.y_test = list(label_test)
         self.group_test = list(group_test)
         
-    def train(self, n, loss, C=1):
+    def train(self, n, train_loss, fairness_loss, C=1):
         """
         train logistic regression according to the fairness metric.
 
@@ -324,8 +324,8 @@ class Adaptive_clf_Shekhar():
             elif min(self.N) < np.sqrt(t):
                 zt = np.argmin(self.N)
             else:
-                u0 = self.U_t(0, self.clf, loss, C=C)
-                u1 = self.U_t(1, self.clf, loss, C=C)
+                u0 = self.U_t(0, self.clf, fairness_loss, C=C)
+                u1 = self.U_t(1, self.clf, fairness_loss, C=C)
                 if u0 > u1:
                     zt = 0
                 else:
@@ -351,7 +351,7 @@ class Adaptive_clf_Shekhar():
             self.clf.fit(self.Dt, self.Dt_label)
                 
             y_pred = self.clf.predict(self.X_test)
-            train_error = loss(y_pred, self.y_test)
+            train_error = train_loss(y_pred, self.y_test)
             self.train_loss.append(train_error)
 
             if t % 500 == 0:
