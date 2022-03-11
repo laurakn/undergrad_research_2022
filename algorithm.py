@@ -266,8 +266,9 @@ class Adaptive_clf_Shekhar():
         # add one sample from group0 to val set
         index = np.random.randint(0, len(self.label[0]))
         self.Dz[0].append(self.feature[0][index])
-        self.Dz_label[0].append(self.label[0][index])
         label = self.label[0][index]
+        self.Dz_label[0].append(label)
+        
         self.feature[0].pop(index)
         self.label[0].pop(index)
 
@@ -284,8 +285,9 @@ class Adaptive_clf_Shekhar():
         # add one sample from group1 to val set
         index = np.random.randint(0, len(self.label[1]))
         self.Dz[1].append(self.feature[1][index])
-        self.Dz_label[1].append(self.label[1][index])
         label = self.label[1][index]
+        self.Dz_label[1].append(self.label[1][index])
+        
         self.feature[1].pop(index)
         self.label[1].pop(index)
 
@@ -368,7 +370,7 @@ class Adaptive_clf_Shekhar():
         loss = 0.0
         y_pred = f.predict(self.Dz[z])
         loss = loss_func(self.Dz_label[z], y_pred)
-            
+        
         return loss + self.ez[z] + (2*C/self.pi[z]) * (self.pi[0]*self.ez[0] + self.pi[1]*self.ez[1])
     
     
