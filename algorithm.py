@@ -400,7 +400,7 @@ class LogReg_Baseline():
         self.fairness_violation = []
         pass
     def make_set(self, feature, label, group, budget, feature_test, label_test, group_test):
-        size = budget // 4
+        size = budget // 2
         feature = np.array(feature)
         label = np.array(label)
         group = np.array(group)
@@ -414,28 +414,17 @@ class LogReg_Baseline():
         group0_feature = feature[group == 0]
         group0_label = label[group == 0]
         
-        group0_pos = group0_feature[group0_label == 1]
-        group0_neg = group0_feature[group0_label == -1]
+        index = np.random.choice(len(group0_feature), size, replace=False)
+        self.X_train = group0_feature[index]
+        self.y_train = group0_label[index]
         
-        group1_pos = group1_feature[group1_label == 1]
-        group1_neg = group1_feature[group1_label == -1]
         
-        index = np.random.choice(len(group0_pos), size, replace=False)
-        self.X_train = group0_pos[index]
-        self.y_train = np.ones(size)
-        index = np.random.choice(len(group0_neg), size, replace=False)
-        self.X_train = np.vstack((self.X_train, group0_neg[index]))
-        self.y_train = np.append(self.y_train, (-1)*np.ones(size))
+        index = np.random.choice(len(group1_feature), size, replace=False)
+        self.X_train = np.vstack((self.X_train, group1_feature[index]))
+        self.y_train = np.append(self.y_train, group1_label[index])
         
-        index = np.random.choice(len(group1_pos), size, replace=False)
-        self.X_train = np.vstack((self.X_train, group1_pos[index]))
-        self.y_train = np.append(self.y_train, np.ones(size))
         
-        index = np.random.choice(len(group1_neg), size, replace=False)
-        self.X_train = np.vstack((self.X_train, group1_neg[index]))
-        self.y_train = np.append(self.y_train, (-1)*np.ones(size))
-        
-        self.group_train = np.hstack((np.zeros(2*size), np.ones(2*size)))
+        self.group_train = np.hstack((np.zeros(size), np.ones(size)))
         
         self.X_train, self.y_train, self.group_train = shuffle(self.X_train, self.y_train, self.group_train)
         
